@@ -3,280 +3,445 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="See a web page the way an AI agent reads it. Undertext reveals hidden text and flags prompt injection. Runs in your browser; nothing is uploaded.">
-</head>
-<body>
-<title>Undertext</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<title>Undertext: read your page the way AI agents do</title>
+<meta name="description" content="Undertext shows the text a web page hides from people but hands to AI agents, and flags instructions aimed at them. Runs in your browser; nothing is uploaded.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#F3F4F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E0F11" media="(prefers-color-scheme: dark)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Undertext: read your page the way AI agents do">
+<meta property="og:description" content="See the text your page hides from people but hands to AI agents, and catch instructions aimed at them.">
+<meta property="og:url" content="https://richardsheng22.github.io/undertext/">
+<meta property="og:image" content="https://richardsheng22.github.io/undertext/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141517'/%3E%3Crect x='6' y='20' width='20' height='6' rx='1.5' fill='%23C6F432'/%3E%3Cpath d='M10.5 6.5v8.5a5.5 5.5 0 0 0 11 0V6.5' stroke='%23fff' stroke-width='3.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/Geist.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Fonts: Geist and Geist Mono (SIL OFL, see fonts/OFL.txt), served from this site so no visitor data goes to a font service. */
+@font-face{font-family:"Geist";src:url("fonts/Geist.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:"Geist Mono";src:url("fonts/GeistMono.woff2") format("woff2");font-weight:100 900;font-display:swap}
+
+/* Ink on paper for everything that is interface. Colour is reserved for meaning:
+   lime = hidden from people but read by AI assistants, cyan = only in the page source, red/amber = severity. */
 :root{
-  --ground:#F3F3F8; --surface:#FFFFFF; --sunk:#EAE9F2;
-  --ink:#17152E; --muted:#5D5A78; --faint:#8D8AA6; --line:#DCDBE8;
-  --uv:#5530F0; --uv-soft:#ECE8FF;
-  --night:#120F2A; --night-2:#1C1840;
-  --glow-a:#FF5FD2; --glow-s:#45E6FF;
-  --crit:#C92A3E; --crit-soft:#FDE8EB;
-  --warn:#9A5B00; --warn-soft:#FFF1D9;
-  --ok:#1C7A52; --ok-soft:#E1F4EA;
-  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --body:"Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --r:10px;
+  --paper:#F3F4F1; --surface:#FFFFFF; --sunk:#E8E9E4; --line:#D9DAD4; --line-2:#C4C6BF;
+  --ink:#141517; --ink-2:#34373C; --muted:#585C63; --faint:#656970;
+  --lime:#C6F432; --lime-text:#4D6A00; --lime-wash:#EEFBC4;
+  --cyan:#3FD4EA; --cyan-text:#006B84; --cyan-wash:#D6F6FB;
+  --red:#C8231B; --red-wash:#FBE3DF; --on-red:#FFFFFF; --amber:#8A5700; --amber-wash:#FBEFD2;
+  --stage:#0B0C0E; --stage-2:#16181B;
+  --sans:"Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --no-liga:"liga" 0, "calt" 0;
+  --shadow:0 1px 0 rgb(20 21 23 / .04), 0 24px 48px -32px rgb(20 21 23 / .45);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --z-stage:2; --z-stage-ui:3; --z-overlay:5; --z-toast:20;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --ground:#0D0C1B; --surface:#16152A; --sunk:#1D1B35;
-    --ink:#EDECFA; --muted:#A6A3C4; --faint:#77739A; --line:#2B2946;
-    --uv:#9C82FF; --uv-soft:#241E4A;
-    --night:#0A0820; --night-2:#15123A;
-    --crit:#FF6B7D; --crit-soft:#3A1520;
-    --warn:#F4B544; --warn-soft:#352610;
-    --ok:#4FD69C; --ok-soft:#10301F;
+    --paper:#0E0F11; --surface:#16181B; --sunk:#1D2024; --line:#2A2D32; --line-2:#3A3E44;
+    --ink:#EDEEEF; --ink-2:#C9CCD1; --muted:#A0A4AB; --faint:#8C9097;
+    --lime-text:#C6F432; --lime-wash:#26300B; --cyan-text:#6BE3F4; --cyan-wash:#0C2D33;
+    --red:#FF6B5F; --red-wash:#3A1613; --on-red:#141517; --amber:#F3B63F; --amber-wash:#35280E;
+    --stage:#07080A; --stage-2:#121417;
+    --shadow:0 1px 0 rgb(0 0 0 / .3), 0 24px 48px -28px rgb(0 0 0 / .8);
   }
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --ground:#0D0C1B; --surface:#16152A; --sunk:#1D1B35;
-  --ink:#EDECFA; --muted:#A6A3C4; --faint:#77739A; --line:#2B2946;
-  --uv:#9C82FF; --uv-soft:#241E4A;
-  --night:#0A0820; --night-2:#15123A;
-  --crit:#FF6B7D; --crit-soft:#3A1520;
-  --warn:#F4B544; --warn-soft:#352610;
-  --ok:#4FD69C; --ok-soft:#10301F;
+  --paper:#0E0F11; --surface:#16181B; --sunk:#1D2024; --line:#2A2D32; --line-2:#3A3E44;
+  --ink:#EDEEEF; --ink-2:#C9CCD1; --muted:#A0A4AB; --faint:#8C9097;
+  --lime-text:#C6F432; --lime-wash:#26300B; --cyan-text:#6BE3F4; --cyan-wash:#0C2D33;
+  --red:#FF6B5F; --red-wash:#3A1613; --on-red:#141517; --amber:#F3B63F; --amber-wash:#35280E;
+  --stage:#07080A; --stage-2:#121417;
+  --shadow:0 1px 0 rgb(0 0 0 / .3), 0 24px 48px -28px rgb(0 0 0 / .8);
 }
 
 *,*::before,*::after{box-sizing:border-box}
-html,body{background:var(--ground)}
-body{color:var(--ink);font:15px/1.55 var(--body);padding-inline:clamp(16px,3vw,40px);padding-block:0 48px}
-.wrap{max-width:1360px;margin-inline:auto}
-button{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--uv);outline-offset:2px;border-radius:6px}
+html{background:var(--paper);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased;padding-bottom:64px}
+.wrap{width:min(1400px,100%);margin-inline:auto;padding-inline:clamp(16px,3.2vw,44px)}
+button,input,textarea{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:4px;box-shadow:0 0 0 5px var(--lime)}
+.ico{width:1em;height:1em;flex:none;fill:currentColor}
+.skip{position:absolute;left:16px;top:-60px;z-index:var(--z-toast);background:var(--ink);color:var(--paper);padding:10px 14px;border-radius:6px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
+.sprite{position:absolute;width:0;height:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* ---------- masthead ---------- */
-.mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 32px;padding-block:28px 20px}
-.mark{display:flex;flex-direction:column;gap:2px}
-.mark h1{margin:0;font:800 clamp(34px,5vw,52px)/0.95 var(--display);letter-spacing:-0.035em;font-variation-settings:"opsz" 96}
-.mark h1 .under{position:relative;display:inline-block}
-.mark h1 .under::after{content:"";position:absolute;left:0.04em;right:0.04em;bottom:-0.06em;height:0.1em;border-radius:1em;background:var(--uv)}
-.mark p{margin:10px 0 0;color:var(--muted);font-size:16px;max-width:52ch;text-wrap:balance}
-.local{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px 6px 10px}
-.local svg{flex:none}
+/* ---------- top bar ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:19px;letter-spacing:-.03em}
+.brand svg{width:28px;height:28px}
+.brand .m-bg{fill:var(--ink)} .brand .m-u{stroke:var(--paper)}
+.topnav{display:flex;align-items:center;gap:4px}
+.topnav a{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border-radius:6px;font-size:14px;font-weight:500;color:var(--muted);text-decoration:none;transition:color .2s,background .2s}
+.topnav a:hover{color:var(--ink);background:var(--sunk)}
 
-/* ---------- source bar ---------- */
-.source{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding-block:14px;border-top:1px solid var(--line)}
-.source .lbl{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-weight:500;font-size:14px;cursor:pointer;transition:border-color .15s,background .15s}
-.chip:hover{border-color:var(--uv)}
-.chip[aria-pressed="true"]{background:var(--ink);color:var(--ground);border-color:var(--ink)}
-.chip small{font-weight:400;opacity:.7;margin-left:4px}
-.spacer{flex:1 1 auto}
-.btn{display:inline-flex;align-items:center;gap:8px;border-radius:8px;padding:8px 14px;font-weight:600;font-size:14px;cursor:pointer;border:1px solid var(--line);background:var(--surface)}
-.btn:hover{border-color:var(--uv)}
-.btn.primary{background:var(--uv);border-color:var(--uv);color:#fff}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn[aria-expanded="true"]{border-color:var(--uv);background:var(--uv-soft)}
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:clamp(28px,5vw,80px);align-items:end;padding-block:clamp(28px,6vh,72px) 36px}
+.hero h1{margin:0;font-weight:800;font-size:clamp(40px,5.1vw,76px);line-height:.98;letter-spacing:-.055em;text-wrap:balance;max-width:17ch}
+.hl{color:#141517;background:linear-gradient(var(--lime),var(--lime)) 0 62%/100% 76% no-repeat;padding-inline:.07em;margin-inline:-.03em;-webkit-box-decoration-break:clone;box-decoration-break:clone;animation:sweep 900ms var(--ease) 250ms both}
+@keyframes sweep{from{background-size:0% 76%;color:inherit}to{background-size:100% 76%;color:#141517}}
+.lede{margin:22px 0 0;font-size:clamp(16px,1.35vw,19px);line-height:1.5;color:var(--ink-2);max-width:44ch;text-wrap:pretty}
+.cta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:28px}
+.promise{display:flex;align-items:center;gap:8px;margin:0 auto 0 28px;font:500 13px/1.4 var(--mono);color:var(--muted)}
+@media (max-width:900px){.top .promise{display:none}}
 
-.drawer{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;display:grid;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface);font-weight:600;font-size:15px;letter-spacing:-.01em;cursor:pointer;white-space:nowrap;transition:transform .2s var(--ease),background .2s,border-color .2s,color .2s}
+.btn:hover{border-color:var(--ink)}
+.btn:active{transform:translateY(1px) scale(.98)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:var(--lime);border-color:var(--lime);color:#141517}
+.btn.quiet{border-color:transparent;background:transparent;padding-inline:4px;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:5px}
+.btn.quiet:hover{text-decoration-color:var(--ink)}
+.btn.small{min-height:36px;padding:0 13px;font-size:14px}
+.btn[aria-expanded="true"]{background:var(--lime);border-color:var(--lime);color:#141517}
+
+/* example picker: a short index of specimens */
+.specimens{border-top:2px solid var(--ink)}
+.specimens h2{margin:0;padding:12px 0 6px;font:500 13px/1.3 var(--mono);color:var(--muted)}
+#samples{display:grid}
+.chip{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 4px 14px 0;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;transition:padding .25s var(--ease)}
+.chip b{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.chip .c-t{display:block}
+.chip .c-t span{display:block;font-size:13.5px;color:var(--muted);font-weight:400;margin-top:1px}
+.chip small{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:6px 7px;border-radius:3px;background:var(--red-wash);color:var(--red)}
+.chip small.clean{background:var(--sunk);color:var(--muted)}
+.chip:hover{padding-left:10px}
+.chip[aria-pressed="true"]{padding-left:14px;box-shadow:inset 4px 0 0 var(--lime)}
+.chip:active{transform:scale(.99)}
+
+/* ---------- scan drawers ---------- */
+.drawer{margin-bottom:28px;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:clamp(18px,2.4vw,28px);display:grid;gap:16px;box-shadow:var(--shadow)}
 .drawer[hidden]{display:none}
-.drawer h2{margin:0;font:700 18px/1.2 var(--display);letter-spacing:-0.01em}
-.drawer p{margin:0;color:var(--muted);max-width:75ch}
-.drawer ol{margin:0;padding-left:20px;color:var(--muted);display:grid;gap:4px}
-.drawer ol b{color:var(--ink);font-weight:600}
-textarea#pasteInput{width:100%;min-height:180px;resize:vertical;font:13px/1.5 var(--mono);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px}
-.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.note{font-size:13px;color:var(--faint)}
-.bm-link{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;background:var(--night);color:#fff;text-decoration:none;font-weight:600;border:1px dashed var(--glow-a);cursor:grab}
-.bm-link .dot{width:8px;height:8px;border-radius:50%;background:var(--glow-a);box-shadow:0 0 10px var(--glow-a)}
+.drawer-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.drawer h2{margin:0;font-weight:700;font-size:22px;letter-spacing:-.03em}
+.drawer p{margin:4px 0 0;color:var(--muted);max-width:68ch}
+.x{border:0;background:none;padding:8px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:18px;line-height:0}
+.x:hover{background:var(--sunk);color:var(--ink)}
+textarea#pasteInput{width:100%;min-height:200px;resize:vertical;font:13px/1.55 var(--mono);color:var(--ink);background:var(--paper);border:1px solid var(--line-2);border-radius:8px;padding:14px}
+textarea#pasteInput::placeholder{color:var(--faint)}
+.row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.note{font-size:13.5px;color:var(--muted);max-width:70ch}
+.note.err{color:var(--red);font-weight:500}
+.steps{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;counter-reset:s}
+.steps li{counter-increment:s;display:grid;gap:8px;align-content:start;color:var(--muted);font-size:14.5px}
+.steps li::before{content:counter(s);font:700 13px/1 var(--mono);width:26px;height:26px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--paper)}
+.steps b{color:var(--ink);font-weight:600}
+.bm-link{justify-self:start;display:inline-flex;align-items:center;gap:9px;padding:11px 16px;border-radius:8px;background:var(--lime);color:#141517;text-decoration:none;font-weight:700;border:2px dashed #141517;cursor:grab}
+.bm-link:active{cursor:grabbing}
 
 /* ---------- workspace ---------- */
-.work{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:20px;align-items:start}
-@media (max-width:980px){.work{grid-template-columns:minmax(0,1fr)}}
+.work{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);grid-template-areas:"v r" "v l";grid-template-rows:auto 1fr;gap:20px clamp(20px,2.4vw,32px);align-items:start;padding-top:8px;border-top:1px solid var(--line)}
+.viewer{grid-area:v;position:sticky;top:12px;display:grid;gap:12px;padding-top:18px}
+#verdict{grid-area:r;padding-top:18px}
+.lists{grid-area:l;display:grid;gap:22px}
+@media (max-width:1000px){
+  .hero{grid-template-columns:minmax(0,1fr);align-items:start}
+  .work{grid-template-columns:minmax(0,1fr);grid-template-areas:"r" "v" "l";grid-template-rows:auto}
+  .viewer{position:static}
+}
 
-.viewer{display:grid;gap:10px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
-@media (max-width:980px){.viewer{position:static}}
-.vbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px}
-.vbar h2{margin:0;font:700 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.vhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
+.vhead h2{margin:0;font-weight:700;font-size:19px;letter-spacing:-.025em;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:inline-flex;padding:3px;border-radius:9px;background:var(--sunk);border:1px solid var(--line)}
+.seg button{border:0;background:none;padding:7px 12px;border-radius:6px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .2s,color .2s}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(20 21 23 / .12)}
 .lenses{display:flex;flex-wrap:wrap;gap:8px}
-.lens{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;cursor:pointer}
-.lens .sw{width:10px;height:10px;border-radius:50%}
-.lens[data-l="a"] .sw{background:var(--glow-a);box-shadow:0 0 8px var(--glow-a)}
-.lens[data-l="s"] .sw{background:var(--glow-s);box-shadow:0 0 8px var(--glow-s)}
-.lens[aria-pressed="false"]{opacity:.55}
-.lens[aria-pressed="false"] .sw{box-shadow:none;background:var(--faint)}
+.lens{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line-2);background:var(--surface);border-radius:6px;padding:6px 11px;font-size:13.5px;font-weight:500;cursor:pointer;transition:opacity .2s,border-color .2s}
+.lens .sw{width:12px;height:12px;border-radius:2px}
+.lens[data-l="a"] .sw{background:var(--lime)} .lens[data-l="s"] .sw{background:var(--cyan)}
+.lens[aria-pressed="false"]{opacity:.55;border-style:dashed}
+.lens[aria-pressed="false"] .sw{background:transparent;outline:1.5px solid var(--faint)}
+.lens:hover{border-color:var(--ink)}
 
-.stage{--split:50%;position:relative;height:clamp(420px,64vh,720px);border-radius:14px;overflow:hidden;background:var(--night);border:1px solid var(--line);box-shadow:0 1px 0 rgba(0,0,0,.02),0 18px 40px -24px rgba(23,21,46,.35)}
+.frame{border-radius:14px;overflow:hidden;border:1px solid var(--line-2);background:var(--stage);box-shadow:var(--shadow)}
+.fbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;padding:9px 14px;background:var(--stage-2);color:#E9EAEC;font:500 12.5px/1 var(--mono)}
+.fbar .r{justify-self:end;color:var(--lime)}
+.fbar .mid{color:#8C9097}
+.frame.tx .fbar .l,.frame.tx .fbar .mid{visibility:hidden}
+.stage{--split:50%;position:relative;height:clamp(440px,68vh,760px);background:var(--stage)}
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
-.stage iframe.reveal{background:var(--night);clip-path:inset(0 0 0 var(--split))}
+.stage iframe.reveal{background:var(--stage);clip-path:inset(0 0 0 var(--split))}
 .stage.dragging iframe{pointer-events:none}
-.tagline{position:absolute;top:12px;z-index:3;font:600 11px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:7px 10px;border-radius:6px;pointer-events:none}
-.tagline.l{left:12px;background:rgba(255,255,255,.92);color:#17152E;border:1px solid rgba(23,21,46,.12)}
-.tagline.r{right:12px;background:rgba(18,15,42,.88);color:#fff;border:1px solid rgba(255,95,210,.45)}
-.handle{position:absolute;top:0;bottom:0;left:var(--split);width:0;z-index:4}
-.handle::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:2px;background:linear-gradient(var(--glow-a),var(--glow-s));box-shadow:0 0 14px rgba(255,95,210,.7)}
-.knob{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid var(--night);display:grid;place-items:center;cursor:ew-resize;touch-action:none;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-.knob svg{color:var(--night)}
-.knob:focus-visible{outline:3px solid var(--glow-a);outline-offset:3px}
-.accuracy{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+.handle{position:absolute;top:0;bottom:0;left:var(--split);width:0;z-index:var(--z-stage-ui)}
+.handle::before{content:"";position:absolute;inset:0 auto 0 -1px;width:2px;background:var(--lime);box-shadow:0 0 0 1px rgb(0 0 0 / .35)}
+.knob{position:absolute;top:50%;left:0;transform:translate(-50%,-50%);width:34px;height:56px;border-radius:8px;background:var(--lime);color:#141517;border:2px solid #141517;display:grid;place-items:center;cursor:ew-resize;touch-action:none;box-shadow:0 8px 24px rgb(0 0 0 / .45);transition:transform .2s var(--ease)}
+.knob:hover{transform:translate(-50%,-50%) scale(1.06)}
+.knob .ico{font-size:18px}
+.knob:focus-visible{outline:2px solid #fff;outline-offset:3px;box-shadow:none}
+.frame.tx .handle,.frame.tx iframe{visibility:hidden}
+
+/* the agent's reading: everything an agent takes in, in page order */
+.transcript,.quote,.normal .body code,textarea#pasteInput{font-variant-ligatures:none;font-feature-settings:var(--no-liga)}
+.transcript{position:absolute;inset:0;overflow:auto;padding:22px clamp(18px,3vw,36px) 40px;background:var(--stage);color:#6E737B;font:14px/1.75 var(--mono);display:none;z-index:var(--z-stage)}
+.frame.tx .transcript{display:block}
+.transcript p{margin:0 0 12px}
+.transcript .t-a{color:#141517;background:var(--lime);padding:1px 3px;border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.transcript .t-s{color:#06282E;background:var(--cyan);padding:1px 3px;border-radius:2px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.transcript [data-sev="likely"]{outline:2px solid #FF5A4E;outline-offset:1px}
+.transcript [data-sev="look"]{outline:2px dashed #F3B63F;outline-offset:1px}
+.frame.no-a .transcript .t-a,.frame.no-s .transcript .t-s{display:none}
+.transcript .t-note{color:#8C9097;border-left:2px solid #2A2D32;padding-left:12px}
+
+/* scanning and error states on the stage */
+.scanning{position:absolute;inset:0;z-index:var(--z-overlay);display:none;place-content:center;justify-items:center;gap:10px;background:rgb(11 12 14 / .88);color:#E9EAEC;font:500 14px/1.4 var(--mono);text-align:center;padding:24px}
+.stage.busy .scanning{display:grid}
+.scanning::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:var(--lime);box-shadow:0 0 24px 2px rgb(198 244 50 / .6);animation:scanline 1.4s var(--ease) infinite}
+@keyframes scanline{from{transform:translateY(0)}to{transform:translateY(min(68vh,760px))}}
+.scanning small{color:#8C9097;font-size:12.5px}
+
+.accuracy{display:flex;gap:9px;align-items:flex-start;margin:0;font-size:13.5px;color:var(--muted)}
 .accuracy b{color:var(--ink);font-weight:600}
-.accuracy .ico{flex:none;margin-top:2px}
+.accuracy .ico{margin-top:3px}
+.legend{font-size:14px;color:var(--muted)}
+.legend summary{cursor:pointer;font-weight:600;color:var(--ink);width:max-content;list-style:none;display:inline-flex;align-items:center;gap:6px}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary .ico{transition:transform .2s}
+.legend[open] summary .ico{transform:rotate(180deg)}
+.legend dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 14px;margin:14px 0 0;max-width:80ch}
+.legend dt{display:flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);white-space:nowrap}
+.legend dt i{width:12px;height:12px;border-radius:2px}
+.legend dd{margin:0}
+.k-e{background:var(--ink)} .k-a{background:var(--lime)} .k-s{background:var(--cyan)}
+@media (max-width:640px){.legend dl{grid-template-columns:minmax(0,1fr)}.legend dd{margin-bottom:6px}}
 
-/* ---------- report ---------- */
-.report{display:grid;gap:16px}
-.verdict{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:14px}
-.verdict .state{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px;width:max-content}
-.state.crit{background:var(--crit-soft);color:var(--crit)}
-.state.warn{background:var(--warn-soft);color:var(--warn)}
-.state.ok{background:var(--ok-soft);color:var(--ok)}
-.verdict h2{margin:0;font:750 clamp(24px,2.6vw,30px)/1.1 var(--display);letter-spacing:-0.025em;text-wrap:balance}
-.verdict p{margin:0;color:var(--muted)}
-.tally{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.tally div{display:grid;gap:2px}
-.tally b{font:700 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
-.tally span{font-size:12px;color:var(--muted);line-height:1.3}
-.tally .crit b{color:var(--crit)} .tally .warn b{color:var(--warn)} .tally .ok b{color:var(--ok)}
-.words{display:grid;gap:8px}
-.words .bar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:var(--sunk)}
-.words .bar i{display:block;height:100%}
-.words .bar .e{background:var(--ink);opacity:.8}
-.words .bar .a{background:var(--glow-a)}
-.words .bar .s{background:var(--glow-s)}
-.words ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:13px;color:var(--muted)}
-.words li{display:flex;align-items:center;gap:8px}
-.words li i{width:10px;height:10px;border-radius:3px;flex:none}
-.words li b{color:var(--ink);font-variant-numeric:tabular-nums;font-weight:600;margin-left:auto}
-.actions{display:flex;flex-wrap:wrap;gap:8px}
+/* ---------- verdict ---------- */
+.verdict{display:grid;gap:18px}
+.verdict .state{justify-self:start;font:600 11.5px/1 var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:7px 9px;border-radius:3px}
+.state.crit{background:var(--red);color:var(--on-red)}
+.state.warn{background:var(--amber-wash);color:var(--amber);box-shadow:inset 0 0 0 1px currentColor}
+.state.ok{background:var(--sunk);color:var(--ink-2)}
+.headline{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 18px;align-items:end}
+.headline .num{font-weight:800;font-size:clamp(72px,8vw,112px);line-height:.8;letter-spacing:-.07em;font-variant-numeric:tabular-nums;padding-bottom:4px}
+.verdict[data-sev="crit"] .num{color:var(--red)}
+.verdict[data-sev="warn"] .num{color:var(--amber)}
+.verdict[data-sev="ok"] .num{color:var(--ink)}
+.verdict h2{margin:0;font-weight:700;font-size:clamp(22px,2.2vw,28px);line-height:1.1;letter-spacing:-.035em;text-wrap:balance}
+.verdict .sub{margin:0;color:var(--ink-2);max-width:52ch}
+.tally{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-block:1px solid var(--line)}
+.tally div{display:grid;gap:2px;padding:12px 0 12px 14px;border-left:1px solid var(--line)}
+.tally div:first-child{border-left:0;padding-left:0}
+.tally b{font:700 22px/1.1 var(--mono);font-variant-numeric:tabular-nums}
+.tally span{font-size:13px;color:var(--muted);line-height:1.3}
+.tally .crit b{color:var(--red)} .tally .warn b{color:var(--amber)} .tally .zero b{color:var(--faint)}
+.words{display:grid;gap:10px}
+.words .bar{display:flex;height:14px;border-radius:3px;overflow:hidden;gap:2px}
+.words .bar i{display:block;height:100%;min-width:2px}
+.words .bar .e{background:var(--ink)} .words .bar .a{background:var(--lime)} .words .bar .s{background:var(--cyan)}
+.words ul{list-style:none;margin:0;padding:0;display:grid;gap:5px;font-size:14px;color:var(--ink-2)}
+.words li{display:flex;align-items:center;gap:9px}
+.words li i{width:11px;height:11px;border-radius:2px;flex:none}
+.words li b{margin-left:auto;font:600 14px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.words li .e{background:var(--ink)} .words li .a{background:var(--lime)} .words li .s{background:var(--cyan)}
+.actions{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.limits{font-size:14px;color:var(--muted)}
+.limits summary{cursor:pointer;text-decoration:underline;text-decoration-color:var(--line-2);text-underline-offset:4px;width:max-content;list-style:none}
+.limits summary::-webkit-details-marker{display:none}
+.limits ul{margin:10px 0 0;padding-left:18px;display:grid;gap:4px}
 
-.group-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:4px 2px 0}
-.group-h h3{margin:0;font:700 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
-.group-h span{font-size:13px;color:var(--faint)}
-.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.finding{display:grid;gap:10px;padding:16px 18px;border-top:1px solid var(--line);cursor:pointer;transition:background .15s}
-.finding:first-child{border-top:0}
-.finding:hover{background:var(--sunk)}
-.finding[aria-current="true"]{background:var(--uv-soft)}
-.fmeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-.pill{font:600 11px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;padding:5px 8px;border-radius:5px}
-.pill.likely{background:var(--crit-soft);color:var(--crit)}
-.pill.look{background:var(--warn-soft);color:var(--warn)}
-.where{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-.where i{width:8px;height:8px;border-radius:50%}
-.where.a i{background:var(--glow-a)} .where.s i{background:var(--glow-s)} .where.e i{background:var(--ink)}
-.finding h4{margin:0;font:650 16px/1.3 var(--body);text-wrap:balance}
-.quote{margin:0;font:12.5px/1.6 var(--mono);color:var(--ink);background:var(--sunk);border-radius:8px;padding:10px 12px;overflow-wrap:anywhere;white-space:pre-wrap}
-.quote mark{background:transparent;color:var(--crit);font-weight:600;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:2px}
-.quote .dec{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);color:var(--muted)}
-.why{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:14px;color:var(--muted)}
-.why li{display:flex;gap:8px}
-.why li::before{content:"";flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);margin-top:9px}
-.fix{font-size:14px;margin:0}
+/* ---------- findings ---------- */
+.group-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 10px}
+.group-h h3{margin:0;font-weight:700;font-size:17px;letter-spacing:-.02em}
+.group-h span{font-size:13.5px;color:var(--muted)}
+.list{display:grid;gap:8px}
+.finding{border:1px solid var(--line);background:var(--surface);border-radius:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.finding.likely{box-shadow:inset 4px 0 0 var(--red)}
+.finding.look{box-shadow:inset 4px 0 0 var(--amber)}
+.finding[aria-current="true"]{border-color:var(--ink)}
+.finding summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px 16px 14px 20px;cursor:pointer;list-style:none}
+.finding summary::-webkit-details-marker{display:none}
+.finding summary:hover{background:var(--sunk)}
+.fmeta{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.pill{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:5px 6px;border-radius:3px}
+.pill.likely{background:var(--red);color:var(--on-red)}
+.pill.look{background:var(--amber-wash);color:var(--amber);box-shadow:inset 0 0 0 1px currentColor}
+.where{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.where i{width:10px;height:10px;border-radius:2px}
+.where.a i{background:var(--lime)} .where.s i{background:var(--cyan)} .where.e i{background:var(--ink)}
+.finding h4{grid-column:1;margin:0;font-weight:600;font-size:16px;line-height:1.3;letter-spacing:-.015em;text-wrap:pretty}
+.finding .chev{grid-column:2;grid-row:1 / span 2;align-self:center;color:var(--muted);font-size:16px;transition:transform .2s}
+.finding[open] .chev{transform:rotate(180deg)}
+.fbody{display:grid;gap:12px;padding:0 16px 16px 20px}
+.quote{margin:0;font:13px/1.65 var(--mono);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:11px 13px;overflow-wrap:anywhere;white-space:pre-wrap}
+.quote mark{color:#141517;background:var(--lime);border-radius:2px;padding:0 1px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.quote .dec{display:block;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line-2);color:var(--muted)}
+.why{margin:0;padding:0;list-style:none;display:grid;gap:5px;font-size:14px;color:var(--ink-2)}
+.why li{display:grid;grid-template-columns:12px minmax(0,1fr);gap:6px}
+.why li::before{content:"";width:6px;height:6px;margin-top:8px;background:var(--line-2)}
+.fix{margin:0;font-size:14px;padding:10px 12px;border-radius:6px;background:var(--sunk)}
 .fix b{font-weight:600}
-.normal{background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.normal details{border-top:1px solid var(--line)}
-.normal details:first-child{border-top:0}
-.normal summary{display:flex;gap:12px;align-items:baseline;padding:13px 18px;cursor:pointer;list-style:none}
+.normal{border-top:1px solid var(--line)}
+.normal details{border-bottom:1px solid var(--line)}
+.normal summary{display:flex;gap:12px;align-items:center;padding:12px 2px;cursor:pointer;list-style:none;font-size:15px}
 .normal summary::-webkit-details-marker{display:none}
-.normal summary::before{content:"";flex:none;width:7px;height:7px;border-right:1.5px solid var(--faint);border-bottom:1.5px solid var(--faint);transform:rotate(-45deg);transition:transform .15s;margin-top:-2px;align-self:center}
-.normal details[open] summary::before{transform:rotate(45deg)}
-.normal summary b{font-weight:600}
-.normal summary .n{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ok);font-weight:600;font-size:13px}
-.normal .body{padding:0 18px 14px 37px;display:grid;gap:8px;font-size:14px;color:var(--muted)}
-.normal .body code{font:12px/1.5 var(--mono);color:var(--ink);background:var(--sunk);border-radius:6px;padding:6px 8px;display:block;overflow-wrap:anywhere}
-.empty{padding:18px;color:var(--muted);font-size:14px}
+.normal summary .ico{color:var(--muted);transition:transform .2s}
+.normal details[open] summary .ico{transform:rotate(180deg)}
+.normal summary b{font-weight:500}
+.normal summary .n{margin-left:auto;font:600 13.5px/1 var(--mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.normal .body{padding:0 2px 14px 28px;display:grid;gap:8px;font-size:14px;color:var(--muted)}
+.normal .body code{font:12.5px/1.5 var(--mono);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:7px 9px;display:block;overflow-wrap:anywhere}
 
-/* ---------- explainer ---------- */
-.how{margin-top:40px;border-top:1px solid var(--line);padding-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px}
-.how h3{margin:0 0 6px;font:700 17px/1.25 var(--display);letter-spacing:-0.01em;display:flex;gap:8px;align-items:center}
-.how p{margin:0;color:var(--muted);font-size:14px;max-width:48ch}
-.how .sw{width:10px;height:10px;border-radius:50%;flex:none}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ground);padding:10px 16px;border-radius:8px;font-weight:500;font-size:14px;z-index:20}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- about ---------- */
+.about{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr);gap:24px clamp(28px,5vw,80px);margin-top:72px;padding-top:28px;border-top:2px solid var(--ink)}
+.about h2{margin:0;font-weight:800;font-size:clamp(28px,3.2vw,40px);line-height:1;letter-spacing:-.05em;max-width:12ch}
+.about .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px 36px}
+.about h3{margin:0 0 6px;font-weight:650;font-size:16px;letter-spacing:-.015em}
+.about p{margin:0;color:var(--muted);font-size:14.5px;max-width:52ch}
+.about .foot{grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:8px 24px;padding-top:18px;border-top:1px solid var(--line);font:500 13px/1.4 var(--mono);color:var(--muted)}
+.about .foot a{text-underline-offset:4px}
+@media (max-width:1000px){.about{grid-template-columns:minmax(0,1fr)}}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:11px 16px;border-radius:8px;font-weight:500;font-size:14px;z-index:var(--z-toast);box-shadow:var(--shadow)}
+@media (max-width:640px){
+  .top{height:60px} .topnav .lbl{display:none}
+  .hero{padding-top:20px}
+  .cta .btn{flex:1 1 auto}
+  .stage{height:min(72vh,560px)}
+  .fbar{font-size:11.5px;padding-inline:10px;grid-template-columns:1fr 1fr} .fbar .mid{display:none}
+  .tally div{padding-left:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .hl{background-size:100% 76%}
+}
 </style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true">
+  <!-- Icons: Phosphor (bold weight), MIT licence, https://phosphoricons.com -->
+  <symbol id="i-lock" viewBox="0 0 256 256"><path d="M208,76H180V56A52,52,0,0,0,76,56V76H48A20,20,0,0,0,28,96V208a20,20,0,0,0,20,20H208a20,20,0,0,0,20-20V96A20,20,0,0,0,208,76ZM100,56a28,28,0,0,1,56,0V76H100ZM204,204H52V100H204Z"/></symbol>
+  <symbol id="i-arrows" viewBox="0 0 256 256"><path d="M216.49,184.49l-32,32a12,12,0,0,1-17-17L179,188H48a12,12,0,0,1,0-24H179l-11.52-11.51a12,12,0,0,1,17-17l32,32A12,12,0,0,1,216.49,184.49Zm-145-64a12,12,0,0,0,17-17L77,92H208a12,12,0,0,0,0-24H77L88.49,56.49a12,12,0,0,0-17-17l-32,32a12,12,0,0,0,0,17Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 256 256"><path d="M108,84a16,16,0,1,1,16,16A16,16,0,0,1,108,84Zm128,44A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128Zm-72,36.68V132a20,20,0,0,0-20-20,12,12,0,0,0-4,23.32V168a20,20,0,0,0,20,20,12,12,0,0,0,4-23.32Z"/></symbol>
+  <symbol id="i-github" viewBox="0 0 256 256"><path d="M212.62,75.17A63.7,63.7,0,0,0,206.39,26,12,12,0,0,0,196,20a63.71,63.71,0,0,0-50,24H126A63.71,63.71,0,0,0,76,20a12,12,0,0,0-10.39,6,63.7,63.7,0,0,0-6.23,49.17A61.5,61.5,0,0,0,52,104v8a60.1,60.1,0,0,0,45.76,58.28A43.66,43.66,0,0,0,92,192v4H76a20,20,0,0,1-20-20,44.05,44.05,0,0,0-44-44,12,12,0,0,0,0,24,20,20,0,0,1,20,20,44.05,44.05,0,0,0,44,44H92v12a12,12,0,0,0,24,0V192a20,20,0,0,1,40,0v40a12,12,0,0,0,24,0V192a43.66,43.66,0,0,0-5.76-21.72A60.1,60.1,0,0,0,220,112v-8A61.5,61.5,0,0,0,212.62,75.17ZM196,112a36,36,0,0,1-36,36H112a36,36,0,0,1-36-36v-8a37.87,37.87,0,0,1,6.13-20.12,11.65,11.65,0,0,0,1.58-11.49,39.9,39.9,0,0,1-.4-27.72,39.87,39.87,0,0,1,26.41,17.8A12,12,0,0,0,119.82,68h32.35a12,12,0,0,0,10.11-5.53,39.84,39.84,0,0,1,26.41-17.8,39.9,39.9,0,0,1-.4,27.72,12,12,0,0,0,1.61,11.53A37.85,37.85,0,0,1,196,104Z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 256 256"><path d="M216,28H88A12,12,0,0,0,76,40V76H40A12,12,0,0,0,28,88V216a12,12,0,0,0,12,12H168a12,12,0,0,0,12-12V180h36a12,12,0,0,0,12-12V40A12,12,0,0,0,216,28ZM156,204H52V100H156Zm48-48H180V88a12,12,0,0,0-12-12H100V52H204Z"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 256 256"><path d="M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 256 256"><path d="M184,28H72A20,20,0,0,0,52,48V224a12,12,0,0,0,18.36,10.18l57.63-36,57.65,36A12,12,0,0,0,204,224V48A20,20,0,0,0,184,28Zm-4,174.35-45.65-28.53a12,12,0,0,0-12.72,0L76,202.35V52H180Z"/></symbol>
+  <symbol id="i-caret" viewBox="0 0 256 256"><path d="M216.49,104.49l-80,80a12,12,0,0,1-17,0l-80-80a12,12,0,0,1,17-17L128,159l71.51-71.52a12,12,0,0,1,17,17Z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 256 256"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></symbol>
+</svg>
+<a class="skip" href="#main">Skip to the scanner</a>
+
+<header class="top wrap">
+  <a class="brand" href="./" aria-label="Undertext home">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect class="m-bg" width="32" height="32" rx="7"/><rect x="6" y="20" width="20" height="6" rx="1.5" fill="#C6F432"/><path class="m-u" d="M10.5 6.5v8.5a5.5 5.5 0 0 0 11 0V6.5" stroke-width="3.4" fill="none" stroke-linecap="round"/></svg>
+    Undertext
+  </a>
+  <span class="promise"><svg class="ico" aria-hidden="true"><use href="#i-lock"/></svg>Runs in your browser. Nothing is uploaded.</span>
+  <nav class="topnav" aria-label="Site">
+    <a href="#about"><span>How it works</span></a>
+    <a href="https://github.com/richardsheng22/undertext"><svg class="ico" aria-hidden="true"><use href="#i-github"/></svg><span class="lbl">Source</span></a>
+  </nav>
+</header>
+
+<section class="hero wrap" aria-labelledby="hero-h">
+  <div>
+    <h1 id="hero-h">Read your page the way <mark class="hl">AI agents</mark> do.</h1>
+    <p class="lede">Undertext shows the text your page hides from people but hands to AI agents, and flags instructions aimed at them.</p>
+    <div class="cta">
+      <button class="btn primary" id="openPaste" aria-expanded="false" aria-controls="pasteDrawer"><svg class="ico" aria-hidden="true"><use href="#i-scan"/></svg>Scan a page</button>
+      <button class="btn quiet" id="openBm" aria-expanded="false" aria-controls="bmDrawer">Get the bookmarklet</button>
+    </div>
+  </div>
+  <nav class="specimens" aria-labelledby="spec-h">
+    <h2 id="spec-h">Or try an example</h2>
+    <div id="samples">
+      <button class="chip" data-sample="kettle" aria-pressed="false"><span class="c-t"><b>Kettle shop</b><span>Hidden text in reviews and product data</span></span><small>Poisoned</small></button>
+      <button class="chip" data-sample="travel" aria-pressed="false"><span class="c-t"><b>Travel deal</b><span>Instructions an agent reads at checkout</span></span><small>Poisoned</small></button>
+      <button class="chip" data-sample="recipe" aria-pressed="false"><span class="c-t"><b>Recipe blog</b><span>Ordinary hidden text, nothing aimed at AI</span></span><small class="clean">Clean</small></button>
+    </div>
+  </nav>
+</section>
 
 <div class="wrap">
-  <header class="mast">
-    <div class="mark">
-      <h1><span class="under">Under</span>text</h1>
-      <p>See what a web page tells AI agents that it doesn’t show you. Drag the slider to reveal the hidden text.</p>
+  <section class="drawer" id="pasteDrawer" aria-labelledby="paste-h" hidden>
+    <div class="drawer-h">
+      <div><h2 id="paste-h">Paste a page’s source</h2>
+        <p>The page is read here, in this tab. Nothing is uploaded. For the fullest scan, use the bookmarklet: pasted source can’t load styles kept in separate files, so some hidden text may be missed.</p></div>
+      <button class="x" data-close="#pasteDrawer" aria-label="Close"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
-    <span class="local"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Runs in your browser. Nothing is uploaded.</span>
-  </header>
-
-  <nav class="source" aria-label="Choose a page to scan">
-    <span class="lbl">Examples</span>
-    <div class="chips" id="samples">
-      <button class="chip" data-sample="kettle" aria-pressed="false">Kettle shop <small>poisoned</small></button>
-      <button class="chip" data-sample="travel" aria-pressed="false">Travel deal <small>poisoned</small></button>
-      <button class="chip" data-sample="recipe" aria-pressed="false">Recipe blog <small>clean</small></button>
-    </div>
-    <span class="spacer"></span>
-    <button class="btn primary" id="openPaste" aria-expanded="false" aria-controls="pasteDrawer">Scan your own page</button>
-    <button class="btn" id="openBm" aria-expanded="false" aria-controls="bmDrawer">Get the bookmarklet</button>
-  </nav>
-
-  <section class="drawer" id="pasteDrawer" hidden>
-    <h2>Paste a page’s source</h2>
-    <p>For the most accurate scan, use the bookmarklet: it captures the page with its styles. If you paste the page source instead, styles kept in separate files can’t be loaded here, so some hidden text may be missed.</p>
+    <label class="sr" for="pasteInput">Page source</label>
     <textarea id="pasteInput" spellcheck="false" placeholder="<html> … paste here … </html>"></textarea>
     <div class="row">
       <button class="btn primary" id="scanPaste">Scan this page</button>
-      <span class="note" id="pasteNote">To get the source: open the page, right-click, choose “View page source”, select all, copy.</span>
+      <span class="note" id="pasteNote" role="status">To get the source: open the page, right-click, choose “View page source”, select all, copy.</span>
     </div>
   </section>
 
-  <section class="drawer" id="bmDrawer" hidden>
-    <h2>Capture any page with one click</h2>
-    <ol>
-      <li><b>Drag this button to your bookmarks bar:</b> <a class="bm-link" id="bmLink" href="#"><span class="dot"></span>Undertext capture</a></li>
-      <li><b>Open the page you want to check</b> and click the bookmark. It copies the page, with its styles, to your clipboard.</li>
-      <li><b>Come back here,</b> choose “Scan your own page” and paste.</li>
+  <section class="drawer" id="bmDrawer" aria-labelledby="bm-h" hidden>
+    <div class="drawer-h">
+      <div><h2 id="bm-h">Capture any page with one click</h2>
+        <p>The bookmarklet copies the page you’re on, with the styles that decide what’s hidden, so nothing is missed.</p></div>
+      <button class="x" data-close="#bmDrawer" aria-label="Close"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <ol class="steps">
+      <li><b>Drag this to your bookmarks bar</b><a class="bm-link" id="bmLink" href="#"><svg class="ico" aria-hidden="true"><use href="#i-bookmark"/></svg>Undertext capture</a></li>
+      <li><b>Open the page you want to check</b>and click the bookmark. It copies the page to your clipboard.</li>
+      <li><b>Come back here</b>choose “Scan a page” and paste.</li>
     </ol>
     <div class="row">
-      <button class="btn" id="copyBm">Copy bookmarklet code</button>
-      <span class="note">Can’t drag? Create a new bookmark by hand and paste the code as its address. Some sites with strict security settings block bookmarklets, which happens more often in Firefox.</span>
+      <button class="btn small" id="copyBm"><svg class="ico" aria-hidden="true"><use href="#i-copy"/></svg>Copy bookmarklet code</button>
+      <span class="note">Can’t drag? Make a new bookmark and paste the code as its address. Some sites with strict security settings block bookmarklets, more often in Firefox.</span>
     </div>
   </section>
+</div>
 
-  <main class="work">
-    <section class="viewer" aria-label="Side-by-side view">
-      <div class="vbar">
-        <h2 id="pageName">Kettle shop</h2>
-        <div class="lenses" role="group" aria-label="What to reveal">
-          <button class="lens" data-l="a" id="lensA" aria-pressed="true"><span class="sw"></span>Hidden, but read by AI assistants</button>
-          <button class="lens" data-l="s" id="lensS" aria-pressed="true"><span class="sw"></span>Only in the page source</button>
-        </div>
+<main class="work wrap" id="main" tabindex="-1">
+  <section class="viewer" aria-labelledby="pageName">
+    <div class="vhead">
+      <h2 id="pageName">Kettle shop</h2>
+      <div class="seg" role="group" aria-label="View">
+        <button id="modeSplit" aria-pressed="true">Side by side</button>
+        <button id="modeTx" aria-pressed="false">Agent’s reading</button>
       </div>
+    </div>
+    <div class="lenses" role="group" aria-label="What to reveal">
+      <button class="lens" data-l="a" id="lensA" aria-pressed="true"><span class="sw"></span>Hidden, but read by AI assistants</button>
+      <button class="lens" data-l="s" id="lensS" aria-pressed="true"><span class="sw"></span>Only in the page source</button>
+    </div>
+    <div class="frame" id="frame">
+      <div class="fbar" aria-hidden="true"><span class="l">What you see</span><span class="mid">drag to compare</span><span class="r">What AI agents read</span></div>
       <div class="stage" id="stage">
         <iframe class="human" id="humanFrame" title="The page as people see it" sandbox="allow-same-origin"></iframe>
         <iframe class="reveal" id="revealFrame" title="The page as AI agents read it" sandbox="allow-same-origin"></iframe>
-        <span class="tagline l">What you see</span>
-        <span class="tagline r">What AI agents read</span>
         <div class="handle">
-          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Reveal slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l-6 6 6 6"/><path d="M15 6l6 6-6 6"/></svg>
-          </div>
+          <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Reveal slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><svg class="ico" aria-hidden="true"><use href="#i-arrows"/></svg></div>
         </div>
+        <div class="transcript" id="transcript" tabindex="0" aria-label="Everything an AI agent reads on this page, in order"></div>
+        <div class="scanning" id="scanning" role="status"><span id="scanMsg">Scanning…</span><small>Everything happens in this browser tab.</small></div>
       </div>
-      <p class="accuracy" id="accuracy"></p>
-    </section>
-
-    <section class="report" aria-live="polite">
-      <div class="verdict" id="verdict"></div>
-      <div id="attention"></div>
-      <div id="normals"></div>
-    </section>
-  </main>
-
-  <section class="how" aria-label="How Undertext reads a page">
-    <div><h3><span class="sw" style="background:var(--ink)"></span>Visible to everyone</h3><p>Text you can actually see on screen. AI agents read this too, just like you.</p></div>
-    <div><h3><span class="sw" style="background:var(--glow-a);box-shadow:0 0 8px var(--glow-a)"></span>Hidden, but read by AI assistants</h3><p>Browsing assistants read a stripped-down version of the page. Tiny, transparent, same-colour or off-screen text still ends up in it, and so do image descriptions and button labels.</p></div>
-    <div><h3><span class="sw" style="background:var(--glow-s);box-shadow:0 0 8px var(--glow-s)"></span>Only in the page source</h3><p>Code comments, meta tags and product data. Scrapers and simpler “summarise this link” tools read these; browsing assistants mostly don’t.</p></div>
-    <div><h3>What it can’t catch</h3><p>Text assembled by scripts after the page loads (the bookmarklet helps with this), text inside images, and cleverly reworded instructions. A clean result isn’t a guarantee.</p></div>
+    </div>
+    <p class="accuracy" id="accuracy"></p>
+    <details class="legend">
+      <summary>What the colours mean <svg class="ico" aria-hidden="true"><use href="#i-caret"/></svg></summary>
+      <dl>
+        <dt><i class="k-e"></i>Visible to everyone</dt><dd>Text you can see on screen. AI agents read it too.</dd>
+        <dt><i class="k-a"></i>Hidden, read by AI assistants</dt><dd>Browsing assistants read a stripped-down version of the page. Tiny, transparent, same-colour or off-screen text still ends up in it, and so do image descriptions and button labels.</dd>
+        <dt><i class="k-s"></i>Only in the page source</dt><dd>Code comments, meta tags and product data. Scrapers and simple “summarise this link” tools read these; browsing assistants mostly don’t.</dd>
+      </dl>
+    </details>
   </section>
-</div>
+
+  <section class="verdict" id="verdict" aria-live="polite"></section>
+  <div class="lists">
+    <section id="attention"></section>
+    <section id="normals"></section>
+  </div>
+</main>
+
+<section class="about wrap" id="about" aria-labelledby="about-h">
+  <h2 id="about-h">How Undertext reads a page</h2>
+  <div class="cols">
+    <div><h3>Three questions for every piece of text</h3><p>Who can see it? Is it talking to an AI and telling it to do something? Is anything else off, like invisible characters or product data that contradicts the page? The verdict comes from the combination, and every finding says why.</p></div>
+    <div><h3>Rules, not an AI judge</h3><p>A judge model can itself be prompt-injected by the page it’s judging. Fixed rules give the same answer every time and can always explain themselves.</p></div>
+    <div><h3>What it can’t see</h3><p>Text inside images, text written into the page by CSS, and instructions reworded to avoid both addressing an AI and override language. A clean result means nothing was found by these checks, not that the page is safe.</p></div>
+    <div><h3>Tested on real sites</h3><p>No false alarms on 28 live websites and 130 saved pages, and every injection planted into live pages was flagged. The methods and caveats are in the <a href="https://github.com/richardsheng22/undertext/blob/main/tests/RESULTS.md">test results</a>.</p></div>
+  </div>
+  <div class="foot"><span>Undertext is an early prototype.</span><a href="https://github.com/richardsheng22/undertext">Source on GitHub</a><span>Fonts: Geist (OFL). Icons: Phosphor (MIT).</span></div>
+</section>
 
 <script>
 (() => {
@@ -380,6 +545,7 @@ h1{font-size:36px;line-height:1.1} .meta{font:14px Helvetica,Arial,sans-serif;co
 
 /* ================= detection rules ================= */
 const AGENT = String.raw`(?:AI|A\.I\.|AI (?:assistants?|agents?|models?|systems?|tools?)|assistants?|agents?|LLMs?|language models?|chat ?bots?|ChatGPT|GPT-\d\w*|Claude|Gemini|Copilot|Perplexity)`;
+const AGENT_ADDR = String.raw`(?:AI (?:assistants?|agents?|models?|systems?|tools?)|assistants?|agents?|LLMs?|language models?|chat ?bots?|ChatGPT|GPT-\d\w*|Claude|Gemini|Copilot|Perplexity)`;
 const SIGNALS = [
   {k:'override', say:'Tries to override the AI’s own instructions', res:[
     /\b(?:ignore|disregard|forget)\b[^.]{0,40}?\b(?:instructions?|prompts?)\b/gi,
@@ -399,7 +565,10 @@ const SIGNALS = [
     /\bif you(?:['’]re| are) (?:an? )?(?:AI|LLM|language model|assistant|agent|bot|chatbot)\b/gi,
     /\byou are (?:an?|the) (?:AI|LLM|language model|assistant|agent|chatbot)\b/gi,
     new RegExp(String.raw`\b` + AGENT + String.raw`\s+(?:reading|visiting|browsing|summari[sz]ing|processing) (?:this|the)\b`, 'gi'),
-    new RegExp(String.raw`(?:^|[.!?\n]\s*)(?:[A-Z]\w+\s+)?` + AGENT + String.raw`\s*[:,]\s`, 'gi'),
+    // "Assistant, …" / "AI agents: …" at the start of a sentence. The comma form needs a named assistant, agent or model:
+    // a headline like "AI, trade and climate: …" is a list, not someone talking to an AI.
+    new RegExp(String.raw`(?:^|[.!?\n]\s*)(?:[A-Z]\w+[ \t]+)?` + AGENT + String.raw`\s*:\s`, 'gi'),
+    new RegExp(String.raw`(?:^|[.!?\n]\s*)(?:[A-Z]\w+[ \t]+)?` + AGENT_ADDR + String.raw`\s*,\s`, 'gi'),
     new RegExp(String.raw`\b` + AGENT + String.raw`\b[^.]{0,30}?\b(?:should|must|shall|need to|are required to|always|never)\b`, 'gi')]},
   {k:'action', say:'Tells it to do something specific', res:[
     /\b(?:recommend|rank|buy|purchase|pay|transfer|approve|confirm|navigate|visit|email|send|forward|reveal|delete|enter|present|choose|select|pick|prioriti[sz]e|favou?r|promote|mention|ignore|complete this purchase|add \d+ units?|add to (?:the )?cart|tell the user|say (?:that|it)|describe (?:this|it)[^.]{0,20}? as|summari[sz]e (?:this|it)[^.]{0,20}? as)\b/gi,
@@ -683,26 +852,26 @@ function analyse(doc, prep){
 
 /* ================= reveal view (the "UV light") ================= */
 const UV_CSS = `
-html,body{background:#120F2A!important}
-body *{color:rgba(196,190,255,.26)!important;background-color:transparent!important;background-image:none!important;border-color:rgba(196,190,255,.12)!important;box-shadow:none!important;text-shadow:none!important}
+html,body{background:#0B0C0E!important}
+body *{color:rgba(233,234,236,.2)!important;background-color:transparent!important;background-image:none!important;border-color:rgba(233,234,236,.1)!important;box-shadow:none!important;text-shadow:none!important}
 img,svg,video,picture,canvas,[role="img"]{opacity:.12!important;filter:grayscale(1)!important}
 body.ut-a [data-ut-lens="a"]{opacity:1!important;position:static!important;left:auto!important;top:auto!important;right:auto!important;clip:auto!important;clip-path:none!important;width:auto!important;height:auto!important;overflow:visible!important;white-space:normal!important;font-size:max(13px,1em)!important;line-height:1.5!important;display:block!important}
-body.ut-a [data-ut-lens="a"],body.ut-a [data-ut-lens="a"] *{color:#FF5FD2!important;opacity:1!important;text-shadow:0 0 14px rgba(255,95,210,.55)!important}
+body.ut-a [data-ut-lens="a"],body.ut-a [data-ut-lens="a"] *{color:#C6F432!important;opacity:1!important;text-shadow:0 0 18px rgba(198,244,50,.35)!important}
 body.ut-s [data-ut-lens="s"]{display:block!important;visibility:visible!important}
-body.ut-s [data-ut-lens="s"],body.ut-s [data-ut-lens="s"] *{color:#45E6FF!important;visibility:visible!important;text-shadow:0 0 14px rgba(69,230,255,.5)!important}
+body.ut-s [data-ut-lens="s"],body.ut-s [data-ut-lens="s"] *{color:#3FD4EA!important;visibility:visible!important;text-shadow:0 0 18px rgba(63,212,234,.3)!important}
 .ut-tag{display:none;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace!important;padding:3px 7px!important;margin:4px 0!important;border-radius:4px;border:1px dashed currentColor!important;white-space:normal!important;word-break:break-word}
-body.ut-a .ut-tag[data-ut-lens="a"]{display:inline-block;color:#FF5FD2!important}
-body.ut-s .ut-tag[data-ut-lens="s"]{display:inline-block;color:#45E6FF!important}
+body.ut-a .ut-tag[data-ut-lens="a"]{display:inline-block;color:#C6F432!important}
+body.ut-s .ut-tag[data-ut-lens="s"]{display:inline-block;color:#3FD4EA!important}
 body.ut-a .ut-tag.quiet,body.ut-s .ut-tag.quiet{opacity:.55!important;text-shadow:none!important}
-.ut-panel{display:none;margin:0!important;padding:14px 18px!important;border-bottom:1px dashed rgba(69,230,255,.4)!important;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace!important}
+.ut-panel{display:none;margin:0!important;padding:14px 18px!important;border-bottom:1px dashed rgba(63,212,234,.4)!important;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace!important}
 body.ut-s .ut-panel{display:block}
-.ut-panel .ut-h{color:#45E6FF!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
-.ut-panel div{color:rgba(69,230,255,.75)!important;margin:3px 0}
+.ut-panel .ut-h{color:#3FD4EA!important;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.ut-panel div{color:rgba(63,212,234,.8)!important;margin:3px 0}
 [data-ut-sev="likely"]::before,[data-ut-sev="look"]::before{display:block;font:700 10px/1.6 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-shadow:none}
-[data-ut-sev="likely"]::before{content:"▲ LIKELY MANIPULATION";color:#FF6B7D!important}
-[data-ut-sev="look"]::before{content:"● WORTH A LOOK";color:#F4B544!important}
+[data-ut-sev="likely"]::before{content:"▲ LIKELY MANIPULATION";color:#FF6B5F!important}
+[data-ut-sev="look"]::before{content:"● WORTH A LOOK";color:#F3B63F!important}
 .ut-flash{animation:utflash 1.6s ease-out}
-@keyframes utflash{0%,40%{outline:3px solid #fff;outline-offset:4px}100%{outline:3px solid transparent;outline-offset:10px}}
+@keyframes utflash{0%,40%{outline:3px solid #C6F432;outline-offset:4px}100%{outline:3px solid transparent;outline-offset:10px}}
 @media (prefers-reduced-motion:reduce){.ut-flash{animation:none;outline:3px solid #fff}}`;
 
 function applyReveal(doc, res, prep){
@@ -748,57 +917,107 @@ function applyReveal(doc, res, prep){
 }
 
 /* ================= report UI ================= */
-function renderReport(res, name){
+const LIMITS = ['Text inside images, which vision-based agents can read.', 'Text written into the page by CSS (::before and ::after).',
+  'Instructions reworded to avoid both addressing an AI and override language.', 'Text added by scripts after the page loads, unless you use the bookmarklet.'];
+function headlineOf(res){
   const likely = res.items.filter(f => f.sev === 'likely'), look = res.items.filter(f => f.sev === 'look');
   const normalCount = Object.values(res.normals).reduce((a, g) => a + g.n, 0);
-  let state, head, sub;
-  if (likely.length){ state = ['crit','Likely manipulation'];
-    head = 'This page is whispering to AI agents.';
-    sub = likely.length + (likely.length === 1 ? ' hidden instruction is' : ' hidden instructions are') + ' aimed at AI assistants. People visiting the page can’t see ' + (likely.length === 1 ? 'it.' : 'them.'); }
-  else if (look.length){ state = ['warn','Worth a look']; head = look.length === 1 ? 'One thing is worth a look.' : 'A few things are worth a look.';
-    sub = 'Nothing clearly malicious was found, but some hidden content could mislead an AI agent.'; }
-  else { state = ['ok','Looks clean']; head = 'Nothing suspicious found.';
-    sub = normalCount ? normalCount + ' hidden ' + (normalCount === 1 ? 'item was' : 'items were') + ' found, and all of them look normal. They’re explained below.' : 'No hidden content found.'; }
+  if (likely.length) return {sev:'crit', state:'Likely manipulation', num: likely.length,
+    head: likely.length === 1 ? 'hidden instruction aimed at AI agents' : 'hidden instructions aimed at AI agents',
+    sub: 'People visiting the page can’t see ' + (likely.length === 1 ? 'it' : 'them') + '. Each one is listed below with what to do.'
+      + (look.length ? ' ' + look.length + ' more ' + (look.length === 1 ? 'thing is' : 'things are') + ' worth a look.' : ''), likely, look, normalCount};
+  if (look.length) return {sev:'warn', state:'Worth a look', num: look.length, head: look.length === 1 ? 'thing worth a look' : 'things worth a look',
+    sub: 'Nothing clearly malicious, but some hidden content could mislead an AI agent.', likely, look, normalCount};
+  return {sev:'ok', state:'Nothing found', num: 0, head: 'Nothing found by these checks.',
+    sub: normalCount ? normalCount + ' hidden ' + (normalCount === 1 ? 'item was' : 'items were') + ' found, and none of them is aimed at AI. They’re listed below.' : 'The page has no hidden content.',
+    likely, look, normalCount};
+}
+const ICON = id => `<svg class="ico" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+function renderReport(res, name){
+  const V = headlineOf(res), {likely, look, normalCount} = V;
   const W = res.words, tot = Math.max(1, W.e + W.a + W.s), pct = v => (v / tot * 100).toFixed(2) + '%';
-  $('#verdict').innerHTML = `
-    <span class="state ${state[0]}">${state[1]}</span>
-    <h2>${esc(head)}</h2><p>${esc(sub)}</p>
+  const v = $('#verdict'); v.dataset.sev = V.sev;
+  v.innerHTML = `
+    <span class="state ${V.sev}">${V.state}</span>
+    <div class="headline">${V.sev === 'ok' ? '' : `<span class="num" aria-hidden="true">${V.num}</span>`}<h2>${V.sev === 'ok' ? '' : `<span class="sr">${V.num} </span>`}${esc(V.head)}</h2></div>
+    <p class="sub">${esc(V.sub)}</p>
     <div class="tally">
-      <div class="crit"><b>${likely.length}</b><span>likely manipulation</span></div>
-      <div class="warn"><b>${look.length}</b><span>worth a look</span></div>
-      <div class="ok"><b>${normalCount}</b><span>normal</span></div>
+      <div class="crit${likely.length ? '' : ' zero'}"><b>${likely.length}</b><span>likely manipulation</span></div>
+      <div class="warn${look.length ? '' : ' zero'}"><b>${look.length}</b><span>worth a look</span></div>
+      <div class="ok"><b>${normalCount}</b><span>hidden but normal</span></div>
     </div>
     <div class="words" aria-label="How many words each audience reads">
       <div class="bar"><i class="e" style="width:${pct(W.e)}"></i><i class="a" style="width:${pct(W.a)}"></i><i class="s" style="width:${pct(W.s)}"></i></div>
       <ul>
-        <li><i style="background:var(--ink)"></i>Words you see<b>${W.e}</b></li>
-        <li><i style="background:var(--glow-a)"></i>Extra words AI assistants read<b>+${W.a}</b></li>
-        <li><i style="background:var(--glow-s)"></i>Extra words in the page source<b>+${W.s}</b></li>
+        <li><i class="e"></i>Words you see<b>${W.e}</b></li>
+        <li><i class="a"></i>Extra words AI assistants read<b>+${W.a}</b></li>
+        <li><i class="s"></i>Extra words in the page source<b>+${W.s}</b></li>
       </ul>
     </div>
-    <div class="actions"><button class="btn" id="copyReport">Copy report as text</button></div>`;
-  $('#copyReport').onclick = () => copyText(reportText(res, name, head, sub), 'Report copied');
+    <div class="actions"><button class="btn small" id="copyReport">${ICON('copy')}Copy report</button>
+      <details class="limits"><summary>What these checks can’t see</summary><ul>${LIMITS.map(l => `<li>${esc(l)}</li>`).join('')}</ul></details></div>`;
+  $('#copyReport').onclick = () => copyText(reportText(res, name, (V.sev === 'ok' ? '' : V.num + ' ') + V.head, V.sub), 'Report copied');
 
   const att = likely.concat(look);
-  $('#attention').innerHTML = att.length ? `<div class="group-h"><h3>Needs attention</h3><span>Click one to find it on the page</span></div>
+  $('#attention').innerHTML = att.length ? `<div class="group-h"><h3>Needs attention</h3><span>Open one to find it on the page</span></div>
     <div class="list">${att.map((f, i) => `
-      <article class="finding" tabindex="0" data-i="${i}">
-        <div class="fmeta"><span class="pill ${f.sev}">${f.sev === 'likely' ? 'Likely manipulation' : 'Worth a look'}</span>
-          <span class="where ${f.lens}"><i></i>${esc(LENS[f.lens])}</span></div>
-        <h4>${esc(f.title)}</h4>
-        <p class="quote">${(ex => highlight(ex, intentOf(ex).spans))(excerpt(f.text, 400))}${f.decoded ? `<span class="dec">decoded → ${highlight(f.decoded, intentOf(f.decoded).spans)}</span>` : ''}</p>
-        <ul class="why">${f.why.map(w => `<li>${esc(w)}</li>`).join('')}${f.where ? `<li>${esc(f.where)}.</li>` : ''}</ul>
-        <p class="fix"><b>What to do:</b> ${esc(f.fix)}</p>
-      </article>`).join('')}</div>` : '';
+      <details class="finding ${f.sev}" data-i="${i}"${i === 0 ? ' open' : ''}>
+        <summary><span class="fmeta"><span class="pill ${f.sev}">${f.sev === 'likely' ? 'Likely manipulation' : 'Worth a look'}</span>
+          <span class="where ${f.lens}"><i></i>${esc(LENS[f.lens])}</span></span>
+          <h4>${esc(f.title)}</h4>${ICON('caret').replace('class="ico"', 'class="ico chev"')}</summary>
+        <div class="fbody">
+          <p class="quote">${(ex => highlight(ex, intentOf(ex).spans))(excerpt(f.text, 400))}${f.decoded ? `<span class="dec">decoded → ${highlight(f.decoded, intentOf(f.decoded).spans)}</span>` : ''}</p>
+          <ul class="why">${f.why.filter(Boolean).map(w => `<li>${esc(w)}</li>`).join('')}${f.where ? `<li>${esc(f.where)}.</li>` : ''}</ul>
+          <p class="fix"><b>What to do:</b> ${esc(f.fix)}</p>
+        </div>
+      </details>`).join('')}</div>` : '';
   $('#attention').querySelectorAll('.finding').forEach(el => {
-    const go = () => { $('#attention').querySelectorAll('.finding').forEach(x => x.removeAttribute('aria-current')); el.setAttribute('aria-current','true'); locate(att[+el.dataset.i]); };
-    el.addEventListener('click', go); el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(); } });
+    el.querySelector('summary').addEventListener('click', () => { if (el.open) return;
+      $('#attention').querySelectorAll('.finding').forEach(x => x.removeAttribute('aria-current')); el.setAttribute('aria-current','true');
+      setTimeout(() => locate(att[+el.dataset.i]), 0); });
   });
 
   const keys = Object.keys(res.normals);
-  $('#normals').innerHTML = keys.length ? `<div class="group-h"><h3>Normal</h3><span>Hidden, but harmless</span></div>
+  $('#normals').innerHTML = keys.length ? `<div class="group-h"><h3>Hidden but normal</h3><span>Nothing here is aimed at AI</span></div>
     <div class="normal">${keys.map(k => { const g = res.normals[k], N = NORMAL[k];
-      return `<details><summary><b>${esc(N.t)}</b><span class="n">${g.n}</span></summary><div class="body"><span>${esc(N.d)}</span>${g.ex.map(x => `<code>${esc(x)}</code>`).join('')}</div></details>`; }).join('')}</div>` : '';
+      return `<details><summary>${ICON('caret')}<b>${esc(N.t)}</b><span class="n">${g.n}</span></summary><div class="body"><span>${esc(N.d)}</span>${g.ex.map(x => `<code>${esc(x)}</code>`).join('')}</div></details>`; }).join('')}</div>` : '';
+}
+
+/* the agent's reading: every piece of text an agent takes in, in page order, coloured by who can see it */
+function buildTranscript(res){
+  const doc = H.contentDocument, box = $('#transcript'); if (!doc || !doc.body){ box.innerHTML = ''; return; }
+  const sevOf = {}; res.items.forEach(f => { if (f.target && f.sev) sevOf[f.target] = sevOf[f.target] === 'likely' ? 'likely' : f.sev; });
+  const paras = [[]]; let total = 0, cut = false; const MAX = 150000;
+  const br = () => { if (paras[paras.length - 1].length) paras.push([]); };
+  const push = (lens, text, sev) => { text = text.replace(/\s+/g, ' ').trim(); if (!text) return; if (total > MAX){ cut = true; return; } total += text.length;
+    const p = paras[paras.length - 1], last = p[p.length - 1];
+    if (last && last.lens === lens && last.sev === sev) last.text += ' ' + text; else p.push({lens, text, sev}); };
+  const cid = new Map(); { const w = doc.createTreeWalker(doc.documentElement, NodeFilter.SHOW_COMMENT); let i = 0; for (let n; (n = w.nextNode());) cid.set(n, 'c' + (i++)); }
+  // what's in the head first: only source-reading tools see it
+  doc.querySelectorAll('meta[content]').forEach((m, i) => { const nm = m.getAttribute('name') || m.getAttribute('property'); if (!nm || nm === 'viewport') return;
+    push('s', 'meta ' + nm + ': ' + m.getAttribute('content'), sevOf['m' + i]); });
+  doc.querySelectorAll('script[type="application/ld+json"]').forEach((sc, i) => push('s', 'structured data: ' + sc.textContent, sevOf['j' + i]));
+  br();
+  const BLOCK = /^(P|DIV|SECTION|ARTICLE|ASIDE|HEADER|FOOTER|NAV|MAIN|LI|UL|OL|H[1-6]|TR|TABLE|BLOCKQUOTE|FIGURE|FORM|DETAILS|SUMMARY|BR|HR|DD|DT)$/;
+  const w = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT | NodeFilter.SHOW_COMMENT);
+  for (let n; (n = w.nextNode());){
+    if (n.nodeType === 1){
+      if (/^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT)$/.test(n.tagName) || n.closest('svg')) continue;
+      if (BLOCK.test(n.tagName)) br();
+      const lens = n.closest('[aria-hidden="true"]') ? 's' : 'a';
+      for (const a of ['alt','aria-label','title']){ const v = (n.getAttribute(a) || '').trim(); if (v && !(n.textContent || '').includes(v)) push(lens, a + ': “' + v + '”', n.dataset.utAttrSev); }
+    } else if (n.nodeType === 8){
+      const t = n.data.trim(); if (t && !/^undertext-snapshot/i.test(t)) push('s', '<!-- ' + t + ' -->', sevOf[cid.get(n)]);
+    } else {
+      const p = n.parentElement; if (!p || /^(SCRIPT|STYLE|TEMPLATE|NOSCRIPT)$/.test(p.tagName) || p.closest('svg')) continue;
+      const h = p.closest('[data-ut-lens]'), lens = h ? h.dataset.utLens : 'e', sev = h ? h.dataset.utSev : undefined;
+      push(lens, n.data.replace(TAG_RE, ''), sev);
+      const tags = n.data.match(TAG_RE); if (tags) push('a', 'invisible characters spell: “' + decodeTags(tags.join('')).trim() + '”', sevOf[p.dataset.utId] || 'look');
+    }
+  }
+  box.innerHTML = paras.filter(p => p.length).map(p => '<p>' + p.map(o => `<span class="t-${o.lens}"${o.sev ? ` data-sev="${o.sev}"` : ''}>${esc(o.text)}</span>`).join(' ') + '</p>').join('')
+    + (cut ? '<p class="t-note">The rest of this page is left out here to keep it fast. The findings cover the whole page.</p>' : '');
+  box.scrollTop = 0;
 }
 
 function reportText(res, name, head, sub){
@@ -815,7 +1034,7 @@ function reportText(res, name, head, sub){
 }
 
 /* ================= viewer: split, lenses, locate, sync ================= */
-const stage = $('#stage'), knob = $('#knob'), H = $('#humanFrame'), R = $('#revealFrame');
+const stage = $('#stage'), frame = $('#frame'), knob = $('#knob'), H = $('#humanFrame'), R = $('#revealFrame');
 let split = 50;
 function setSplit(p){ split = Math.max(0, Math.min(100, p)); stage.style.setProperty('--split', split + '%'); knob.setAttribute('aria-valuenow', Math.round(split)); }
 knob.addEventListener('pointerdown', e => { knob.setPointerCapture(e.pointerId); stage.classList.add('dragging'); });
@@ -827,13 +1046,17 @@ knob.addEventListener('keydown', e => { const k = {ArrowLeft:-5, ArrowRight:5, H
 const lensA = $('#lensA'), lensS = $('#lensS');
 function setLensClasses(){ const b = R.contentDocument && R.contentDocument.body; if (!b) return;
   const a = lensA.getAttribute('aria-pressed') === 'true', s = lensS.getAttribute('aria-pressed') === 'true';
-  b.classList.toggle('ut-a', a); b.classList.toggle('ut-s', s);
+  b.classList.toggle('ut-a', a); b.classList.toggle('ut-s', s); frame.classList.toggle('no-a', !a); frame.classList.toggle('no-s', !s);
   R.contentDocument.querySelectorAll('details[data-ut-collapsed]').forEach(d => d.open = s); }
 [lensA, lensS].forEach(btn => btn.addEventListener('click', () => { btn.setAttribute('aria-pressed', btn.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); setLensClasses(); }));
 
+const modeSplit = $('#modeSplit'), modeTx = $('#modeTx');
+function setMode(tx){ frame.classList.toggle('tx', tx); modeSplit.setAttribute('aria-pressed', String(!tx)); modeTx.setAttribute('aria-pressed', String(tx)); }
+modeSplit.addEventListener('click', () => setMode(false)); modeTx.addEventListener('click', () => setMode(true));
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function locate(f){
   const rd = R.contentDocument; if (!rd || !f.target) return;
+  setMode(false);
   (f.lens === 'a' ? lensA : f.lens === 's' ? lensS : null)?.setAttribute('aria-pressed', 'true'); setLensClasses();
   let el = rd.querySelector('[data-ut-for="' + f.target + '"]') || rd.querySelector('[data-ut-id="' + f.target + '"]');
   if (/^[mjn]/.test(f.target) && !el) el = rd.querySelector('[data-ut-id="panel"]');
@@ -842,7 +1065,7 @@ function locate(f){
   se.scrollTo({top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth'});
   el.classList.remove('ut-flash'); void el.offsetWidth; el.classList.add('ut-flash');
   if (split > 40) animateSplit(split, 22);
-  if (matchMedia('(max-width:980px)').matches) stage.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block:'start'});
+  if (matchMedia('(max-width:1000px)').matches) stage.scrollIntoView({behavior: reduced ? 'auto' : 'smooth', block:'start'});
 }
 function animateSplit(from, to, ms = 700){
   if (reduced){ setSplit(to); return; }
@@ -863,21 +1086,35 @@ const loadFrame = (fr, src) => new Promise(res => { fr.addEventListener('load', 
 /* ================= scan ================= */
 let current = null;
 async function scan(html, name, kind){
-  const prep = prepare(html);
-  await Promise.all([loadFrame(H, prep.src), loadFrame(R, prep.src)]);
-  if (H.contentDocument.fonts) try { await H.contentDocument.fonts.ready; } catch(e){}
-  const res = analyse(H.contentDocument, prep);
-  applyReveal(R.contentDocument, res, prep);
-  wireSync();
-  current = {res, name};
-  $('#pageName').textContent = name;
-  renderReport(res, name);
-  const acc = $('#accuracy');
-  const icon = '<svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.5"/></svg>';
-  acc.innerHTML = icon + (kind === 'sample' ? '<span><b>Example page</b>, made up for this demo. The hidden text in it is based on techniques seen on real websites in 2026.</span>'
-    : prep.snapshot ? '<span><b>Captured from the live page</b> with the bookmarklet, styles included. Scripts are switched off in this preview.</span>'
-    : '<span><b>Pasted page source.</b> Styles kept in separate files can’t be loaded here, so some hidden text may be missed and the preview may look plain. Use the bookmarklet for a full capture.</span>');
-  animateSplit(kind === 'sample' && !scan.intro ? 88 : split, 50, 1100); scan.intro = true;
+  const kb = html.length / 1024;
+  $('#scanMsg').textContent = 'Scanning ' + name + (kb > 200 ? ' (' + (kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.round(kb) + ' KB') + ')' : '') + '…';
+  stage.classList.add('busy');
+  // let the scanning state paint before the heavy work starts
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try {
+    const prep = prepare(html);
+    await Promise.all([loadFrame(H, prep.src), loadFrame(R, prep.src)]);
+    if (H.contentDocument.fonts) try { await H.contentDocument.fonts.ready; } catch(e){}
+    const res = analyse(H.contentDocument, prep);
+    applyReveal(R.contentDocument, res, prep);
+    buildTranscript(res);
+    wireSync();
+    current = {res, name};
+    $('#pageName').textContent = name; $('#pageName').title = name;
+    renderReport(res, name);
+    const acc = $('#accuracy');
+    acc.innerHTML = ICON('info') + (kind === 'sample' ? '<span><b>Example page</b>, made up for this demo. The hidden text in it is based on techniques seen on real websites in 2026.</span>'
+      : prep.snapshot ? '<span><b>Captured from the live page</b> with the bookmarklet, styles included. Scripts are switched off in this preview.</span>'
+      : '<span><b>Pasted page source.</b> Styles kept in separate files can’t be loaded here, so some hidden text may be missed and the preview may look plain. Use the bookmarklet for a full capture.</span>');
+    animateSplit(kind === 'sample' && !scan.intro ? 88 : split, 50, 1100); scan.intro = true;
+  } catch (e){
+    const v = $('#verdict'); v.dataset.sev = 'warn';
+    v.innerHTML = `<span class="state warn">Scan failed</span><div class="headline"><h2>Undertext couldn’t read this page.</h2></div>
+      <p class="sub">The page may be incomplete or unusually built. Try capturing it again with the bookmarklet, or paste the full page source. (${esc(String(e && e.message || e).slice(0, 140))})</p>`;
+    $('#attention').innerHTML = ''; $('#normals').innerHTML = '';
+  } finally {
+    stage.classList.remove('busy');
+  }
 }
 
 /* ================= inputs ================= */
@@ -890,9 +1127,12 @@ function drawer(btn, id){ const d = $(id), open = d.hidden; ['#pasteDrawer','#bm
   ['#openPaste','#openBm'].forEach(x => $(x).setAttribute('aria-expanded','false')); d.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }
 $('#openPaste').addEventListener('click', e => { drawer(e.currentTarget, '#pasteDrawer'); if (!$('#pasteDrawer').hidden) $('#pasteInput').focus(); });
 $('#openBm').addEventListener('click', e => drawer(e.currentTarget, '#bmDrawer'));
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => { $(b.dataset.close).hidden = true;
+  ['#openPaste','#openBm'].forEach(x => $(x).setAttribute('aria-expanded','false')); }));
 $('#scanPaste').addEventListener('click', () => {
   const v = $('#pasteInput').value.trim();
-  if (!/<[a-z!]/i.test(v)){ $('#pasteNote').textContent = 'That doesn’t look like HTML. Paste the page source, which starts with something like <!doctype html> or <html>.'; return; }
+  if (!/<[a-z!]/i.test(v)){ const n = $('#pasteNote'); n.classList.add('err'); n.textContent = 'That doesn’t look like HTML. Paste the page source, which starts with something like <!doctype html> or <html>.'; $('#pasteInput').focus(); return; }
+  $('#pasteNote').classList.remove('err');
   const m = /<title[^>]*>([^<]{1,80})/i.exec(v);
   document.querySelectorAll('#samples .chip').forEach(c => c.setAttribute('aria-pressed','false'));
   $('#pasteDrawer').hidden = true; $('#openPaste').setAttribute('aria-expanded','false');
@@ -915,10 +1155,15 @@ function undertextSnapshot(){
     var r=e.getBoundingClientRect(); if(r.width<=2||r.height<=2) out.push('width:'+r.width+'px','height:'+r.height+'px');
     d.setAttribute('style',out.join(';'));}
   var sc=copy.querySelectorAll('script:not([type="application/ld+json"])'); for(var k=0;k<sc.length;k++) sc[k].remove();
+  // Styles that scripts insert rule by rule (CSS-in-JS, constructed sheets) never appear in the HTML; copy their rules too.
+  var css='', sheets=[].slice.call(document.styleSheets).concat([].slice.call(document.adoptedStyleSheets||[]));
+  for(var q=0;q<sheets.length;q++){var own=sheets[q].ownerNode; if(own&&(own.tagName==='LINK'||(own.tagName==='STYLE'&&own.textContent.trim()))) continue;
+    try{var rules=sheets[q].cssRules; for(var u=0;u<rules.length;u++) css+=rules[u].cssText+'\n';}catch(x){}}
+  if(css){var extra=document.createElement('style'); extra.setAttribute('data-undertext-cssom',''); extra.textContent=css; (copy.querySelector('head')||copy).appendChild(extra);}
   var html='<'+'!-- undertext-snapshot '+location.href.replace(/-->/g,'')+' --'+'>\n'+copy.outerHTML;
   // An on-page notice rather than alert(): sandboxed pages (TechCrunch, for one) silently block alert().
   var say=function(msg,stay){var n=document.createElement('div');n.setAttribute('data-undertext-ui','');n.setAttribute('role','status');n.textContent=msg;
-    n.setAttribute('style','all:initial;position:fixed;z-index:2147483647;left:50%;top:16px;transform:translateX(-50%);max-width:90vw;box-sizing:border-box;padding:12px 18px;border-radius:10px;background:#1d1b2e;color:#fff;font:600 15px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.35);cursor:pointer');
+    n.setAttribute('style','all:initial;position:fixed;z-index:2147483647;left:50%;top:16px;transform:translateX(-50%);max-width:90vw;box-sizing:border-box;padding:12px 18px;border-radius:10px;background:#141517;color:#fff;border-left:6px solid #C6F432;font:600 15px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.35);cursor:pointer');
     n.onclick=function(){n.remove();};document.documentElement.appendChild(n);if(!stay)setTimeout(function(){n.remove();},6000);};
   var done=function(){say('Undertext: copied this page ('+Math.round(html.length/1024)+' KB). Now paste it into Undertext.');};
   var fallback=function(){var ta=document.createElement('textarea');ta.setAttribute('data-undertext-ui','');ta.value=html;ta.setAttribute('style','position:fixed;left:5%;top:5%;width:90%;height:90%;z-index:2147483646');document.documentElement.appendChild(ta);ta.focus();ta.select();

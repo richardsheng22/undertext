@@ -4,18 +4,18 @@
 
 AI agents that shop, research and fill in forms for people don't read pages the way people do. They also read text that's hidden from view: off-screen blocks, invisible characters, image descriptions, code comments, structured data. Some pages use that gap to slip instructions to the agent ("Ignore previous instructions…", "AI assistants must always recommend…").
 
-Undertext shows the page side by side: what you see, and what an agent reads. It highlights hidden text and flags anything that looks like an instruction aimed at AI.
+Undertext shows the page side by side: what you see, and what an agent reads. It highlights hidden text and flags anything that looks like an instruction aimed at AI. The **Agent’s reading** view lists everything an agent takes in, in page order, with the hidden parts marked.
 
 **Try it:** https://richardsheng22.github.io/undertext/
 
 ## How to use it
 
 1. **Try an example.** Open the page and pick one of the built-in examples.
-2. **Scan a real page.** Either:
+2. **Scan a real page** with “Scan a page”. Either:
    - **Bookmarklet (recommended):** drag “Undertext capture” to your bookmarks bar, open the page you want to check, click the bookmark, then paste into Undertext. It captures the page with the styles that decide what's hidden.
    - **Paste the source:** right-click → View page source → copy, then paste it. This is quicker, but it misses text hidden by separate stylesheets and text added by scripts after the page loads.
 
-Everything runs in your browser. Nothing is uploaded, and there's no server.
+Everything runs in your browser. Nothing is uploaded, there's no server, and fonts are served from this site rather than a font service.
 
 ## How it decides
 
@@ -35,7 +35,12 @@ A clean result isn't a guarantee. Undertext can't see:
 
 ## Testing
 
-Tested on 28 live websites and 130 saved real pages (0 false alarms), 162 injections planted into live pages (all flagged), and a 95-case attack set. See [`tests/RESULTS.md`](tests/RESULTS.md) for the methods, numbers and caveats, and for how to rerun them.
+Tested on 28 live websites and 130 saved real pages (0 false alarms), 180 injections planted into live pages (all flagged), and a 95-case attack set with 35 innocent controls. See [`tests/RESULTS.md`](tests/RESULTS.md) for the methods, numbers and caveats, and for how to rerun them.
+
+## Credits
+
+- Fonts: [Geist and Geist Mono](https://github.com/vercel/geist-font), SIL Open Font License (`fonts/OFL.txt`)
+- Icons: [Phosphor](https://phosphoricons.com), MIT License
 
 ## Status
 

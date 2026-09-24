@@ -1,19 +1,21 @@
 # Undertext test results
 
-**Date:** 2026-09-23 · **Version:** prototype v0.3 · **Modes tested:** pasted page source, and the bookmarklet on live websites, all run through the real UI in headless Chromium
+**Date:** 2026-09-24 · **Version:** prototype v0.4 (redesign) · **Modes tested:** pasted page source, and the bookmarklet on live websites, all run through the real UI in headless Chromium
 
-Sections 1 and 2 are the v0.2 saved-page tests, rerun on v0.3. Section 3 is new: the live-site tests that led to v0.3.
+Sections 1 and 2 are the saved-page tests. Section 3 is the live-site testing that led to v0.3. Section 4 is the full re-run after the v0.4 redesign.
 
 ## Summary
 
-| Test | v0.2 | v0.3 |
-|---|---|---|
-| False alarms on saved real-world pages (Readability corpus) | 0 on 75 pages | **0 on 130 pages** (the corpus has grown) |
-| False alarms on **live 2026 sites**, bookmarklet capture | not tested (network blocked) | **0** on 28 sites. 1 “worth a look” on Wikipedia’s prompt-injection article, which quotes a real injection (see 3.2) |
-| Injections **planted in live pages**, hidden by styles that aren’t in the HTML | not tested | **162 / 162 flagged “likely”**; 158 with the injection shown in the quote (see 3.3) |
-| Planted injections in saved pages, right verdict | 80 / 80 | **95 / 95** (19 techniques × 5 pages) |
-| Innocent hidden-text controls left alone | 15 / 15 | **30 / 30** saved, **54 / 54** live |
-| Deliberately reworded injection (known limit) | Missed 5 / 5 | Missed 5 / 5, as expected |
+| Test | v0.2 | v0.3 | v0.4 |
+|---|---|---|---|
+| False alarms on saved real-world pages (Readability corpus) | 0 on 75 pages | 0 on 130 pages | **0 on 130 pages** |
+| False alarms on **live 2026 sites**, bookmarklet capture | not tested | 0 on 28 sites | **0 on 28 sites** (after one fix, see 4) |
+| Injections **planted in live pages**, hidden by styles that aren’t in the HTML | not tested | 162 / 162 flagged | **180 / 180 flagged** (30 sites); 176 shown in the quote |
+| Planted injections in saved pages, right verdict | 80 / 80 | 95 / 95 | **95 / 95** |
+| Innocent hidden-text controls left alone | 15 / 15 | 30 / 30 saved, 54 / 54 live | **35 / 35** saved, **60 / 60** live |
+| Deliberately reworded injection (known limit) | Missed 5 / 5 | Missed 5 / 5 | Missed 5 / 5, as expected |
+
+On Wikipedia’s prompt-injection article, one visible quoted injection is still rated “worth a look”. That is expected (see 3.2).
 
 ## 1. False alarms: real-world pages
 
@@ -67,6 +69,7 @@ Each payload was planted **one at a time** into five real pages: BBC, WordPress,
 | P24 | Control: shop line-break hints (`18-​Volt`, `in.​`) *(v0.3)* | Not flagged | 5/5 (v0.2: flagged) |
 | P25 | Control: changelog tooltip “Updated instructions for…” *(v0.3)* | Not flagged | 5/5 (v0.2: flagged) |
 | P26 | Control: article sentence about system prompts *(v0.3)* | Not flagged | 5/5 (v0.2: flagged) |
+| P27 | Control: hidden headline list starting “AI, trade, Taiwan…” *(v0.4)* | Not flagged | 5/5 (v0.3: flagged) |
 
 P21–P26 come straight from the live-site findings in section 3.
 
@@ -187,6 +190,28 @@ Pasted page source (the site’s raw HTML) was scanned alongside for comparison.
 - In 4 cases (GitHub, Best Buy ×2, BBC Good Food), two plants landed in the same hidden menu. The menu is one finding, and its quote shows only the first injection.
 - On MDN, the L7 newsletter control landed in the same closed section as L6, so it appears inside that (correct) Likely finding.
 - **Pasted source for the same pages: 0/162.** The plants exist only in the live page, just like text that scripts add after loading.
+
+## 4. v0.4: re-run after the redesign
+
+The redesign rebuilt the page but left the detection rules alone, with two exceptions, both covered below. Every suite was re-run against the final code.
+
+**Bookmarklet change: styles injected by scripts are now captured.**
+- Many sites (the BBC, for example) add their CSS rule by rule from JavaScript, so it never appears in the HTML. The old capture lost it, and the “What you see” preview looked unstyled: the BBC nav ran together as “HomeNewsSport…”.
+- The bookmarklet now also copies those rules, and the preview shows the real layout.
+- Because layout can affect what counts as hidden, the live suites were captured again from scratch with the new bookmarklet.
+
+**New false alarm found on today’s Guardian homepage, fixed.**
+- The flagged text was a hidden menu of headlines. One of them, “AI, trade, Taiwan and climate: …”, read as someone addressing an AI (“AI, …” at the start of a line), and another said “state visit” (“visit” counts as an instruction). Together that made “Likely manipulation”.
+- **Fix:** the comma form of addressing (“Assistant, …”) now needs a named assistant, agent or model, not bare “AI”. The colon form (“AI agents: …”) is unchanged.
+- Added as control P27.
+
+**Results (v0.4):**
+- **Live, clean:** 28 sites loaded; 0 false alarms in capture and source mode; confirmation shown on 28/28.
+- **Live, planted:** 30 sites loaded.
+  - All 180 planted injections were flagged “Likely”. 176 are shown in their finding’s quote; the other 4 are the known case of two plants in one hidden menu (see 3.3).
+  - 60/60 controls weren’t flagged on their own. On MDN, the newsletter control again landed inside a flagged section.
+- **Saved pages:** 0 flags on 130 pages. Attack set: 95/95 caught, 35/35 controls left alone.
+- **Built-in examples:** unchanged (kettle 5/2/7, travel 3/0/3, recipe 0/0/11).
 
 ## Caveats: read these before trusting the numbers
 
