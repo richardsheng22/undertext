@@ -1,0 +1,54 @@
+# Live sites for tests/run-live.js: "name url". Mix of page types that agents visit for people.
+# news
+bbc              https://www.bbc.com/news
+guardian         https://www.theguardian.com/international
+cnn              https://www.cnn.com/
+apnews           https://apnews.com/
+npr              https://www.npr.org/
+aljazeera        https://www.aljazeera.com/
+reuters          https://www.reuters.com/
+nytimes          https://www.nytimes.com/
+# tech press
+theverge         https://www.theverge.com/
+arstechnica      https://arstechnica.com/
+techcrunch       https://techcrunch.com/
+wired            https://www.wired.com/
+# reference and docs
+wikipedia        https://en.wikipedia.org/wiki/Prompt_injection
+mdn              https://developer.mozilla.org/en-US/docs/Web/HTML/Element/details
+github           https://github.com/mozilla/readability
+stackoverflow    https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array
+# shopping
+amazon           https://www.amazon.com/
+amazon-product   https://www.amazon.com/dp/B0CHWRXH8B
+ebay             https://www.ebay.com/
+etsy             https://www.etsy.com/
+walmart          https://www.walmart.com/
+target           https://www.target.com/
+bestbuy          https://www.bestbuy.com/
+ikea             https://www.ikea.com/us/en/
+homedepot        https://www.homedepot.com/
+# recipes and reviews
+allrecipes       https://www.allrecipes.com/recipe/10813/best-chocolate-chip-cookies/
+seriouseats      https://www.seriouseats.com/
+bbcgoodfood      https://www.bbcgoodfood.com/
+tripadvisor      https://www.tripadvisor.com/
+yelp             https://www.yelp.com/
+imdb             https://www.imdb.com/title/tt0111161/
+# travel
+booking          https://www.booking.com/
+expedia          https://www.expedia.com/
+airbnb           https://www.airbnb.com/
+# forums and blogs
+hackernews       https://news.ycombinator.com/
+reddit           https://old.reddit.com/r/programming/
+medium           https://medium.com/
+substack         https://on.substack.com/
+wordpress-blog   https://wordpress.org/news/
+# services
+gov-uk           https://www.gov.uk/
+irs              https://www.irs.gov/
+mayoclinic       https://www.mayoclinic.org/diseases-conditions/common-cold/symptoms-causes/syc-20351605
+webmd            https://www.webmd.com/
+zillow           https://www.zillow.com/
+craigslist       https://sfbay.craigslist.org/
